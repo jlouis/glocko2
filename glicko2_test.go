@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	epsilon = 0.0000000001
+	epsilon = 0.00000001
 )
 
 func TestScale(t *testing.T) {
@@ -88,7 +88,6 @@ func TestComputeDelta(t *testing.T) {
 	}
 }
 
-/*
 func TestComputeVolatility(t *testing.T) {
 	const expect, sigma, phi, v, delta, tau = 0.059995984286488495, 0.06, 1.1512924985234674, 1.7789770897239976, -0.4839332609836549, 0.5
 
@@ -98,7 +97,6 @@ func TestComputeVolatility(t *testing.T) {
 		t.Errorf("computeVolatility(⋯) = %v, want %v", sigmap, expect)
 	}
 }
-*/
 
 func TestPhiStar(t *testing.T) {
 	const expect, sigmap, phi = 1.1528546895801364, 0.059995984286488495, 1.1512924985234674

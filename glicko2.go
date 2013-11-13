@@ -72,8 +72,74 @@ func computeDelta(v float64, sopp []opp) float64 {
 	return v * s
 }
 
+func volK(f func(float64) float64, a float64, tau float64) float64 {
+	k := 0.0
+	c := a - k * math.Sqrt(tau * tau)
+	for ; f(c) < 0.0; k += 1.0 {
+		c = a - k * math.Sqrt(tau * tau)
+	}
+	
+	return c
+}
+
+func sign(x float64) float64 {
+	if x < 0 {
+		return -1.0
+	} else if x > 0 {
+		return 1.0
+	} else {
+		return 0.0
+	}
+}
+
 func computeVolatility(sigma float64, phi float64, v float64, delta float64, tau float64) float64 {
-	return 0.0
+	a := math.Log(sigma * sigma)
+	phi2 := phi * phi
+	f := func (x float64) float64 {
+		ex := math.Exp(x)
+		d2 := delta * delta
+		a2 := phi2 + v + ex
+		p2 := (x - a) / (tau * tau)
+		p1 := (ex * (d2 - phi2 - v - ex)) / (2 * a2 * a2)
+		return (p1 - p2)
+	}
+	
+	var b float64
+	if delta * delta > phi * phi {
+		b = math.Log(delta * delta - phi * phi - v)
+	} else {
+		b  = volK(f, a, tau)
+	}
+	
+	fa := f(a)
+	fb := f(b)
+	
+	var c, fc, d, fd float64
+	for i := 100; ; i-- {
+		if math.Abs(b - a) <= ε {
+			return math.Exp(a / 2)
+		} else {
+			c = (a + b) * 0.5
+			fc = f(c)
+			d = c + (c - a) * (sign(fa - fb) * fc) / math.Sqrt(fc * fc - fa*fb)
+			fd = f(d)
+			
+			if sign(fd) != sign(fc) {
+				a = c
+				b = d
+				fa = fc
+				fb = fd
+			} else if sign(fd) != sign(fa) {
+				b = d
+				fb = fd
+			} else {
+				a = d
+				fa = fd
+			}
+		}
+	}
+	
+	panic("Exceeded iterations")
 }
 
 func phiStar(sigmap float64, phi float64) float64 {
