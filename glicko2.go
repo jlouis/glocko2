@@ -162,3 +162,18 @@ func unscale(mup float64, phip float64) (float64, float64) {
 	rdp := scaling * phip
 	return rp, rdp
 }
+
+func (p Player) Rate(os []Opponent) Player {
+	const tau = 0.5
+	mu, phi := scale(p.R, p.Rd)
+	sopps := scaleOpponents(mu, os)
+	v := updateRating(sopps)
+	delta := computeDelta(v, sopps)
+	
+	sigmap := computeVolatility(p.Sigma, phi, v, delta, tau)
+	phistar := phiStar(sigmap, phi)
+	mup, phip := newRating(phistar, mu, v, sopps)
+	r1, rd1 := unscale(mup, phip)
+	
+	return Player{ r1, rd1, sigmap }
+}

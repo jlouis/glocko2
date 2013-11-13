@@ -143,3 +143,15 @@ func TestUnscale(t *testing.T) {
 		t.Errorf("unscale for rd")
 	}
 }
+
+func BenchmarkRate(b *testing.B) {
+    	p := Player{1500, 200, 0.06}
+	os := []Opponent{
+		Opponent{1400, 30, 1},
+		Opponent{1550, 100, 0},
+		Opponent{1700, 300, 0}}
+    b.ResetTimer()
+    for i := 0; i < b.N; i++ {
+        p.Rate(os)
+    }
+}
