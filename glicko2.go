@@ -74,11 +74,11 @@ func computeDelta(v float64, sopp []opp) float64 {
 
 func volK(f func(float64) float64, a float64, tau float64) float64 {
 	k := 0.0
-	c := a - k * math.Sqrt(tau * tau)
+	c := a - k*math.Sqrt(tau*tau)
 	for ; f(c) < 0.0; k += 1.0 {
-		c = a - k * math.Sqrt(tau * tau)
+		c = a - k*math.Sqrt(tau*tau)
 	}
-	
+
 	return c
 }
 
@@ -95,7 +95,7 @@ func sign(x float64) float64 {
 func computeVolatility(sigma float64, phi float64, v float64, delta float64, tau float64) float64 {
 	a := math.Log(sigma * sigma)
 	phi2 := phi * phi
-	f := func (x float64) float64 {
+	f := func(x float64) float64 {
 		ex := math.Exp(x)
 		d2 := delta * delta
 		a2 := phi2 + v + ex
@@ -103,27 +103,27 @@ func computeVolatility(sigma float64, phi float64, v float64, delta float64, tau
 		p1 := (ex * (d2 - phi2 - v - ex)) / (2 * a2 * a2)
 		return (p1 - p2)
 	}
-	
+
 	var b float64
-	if delta * delta > phi * phi {
-		b = math.Log(delta * delta - phi * phi - v)
+	if delta*delta > phi*phi {
+		b = math.Log(delta*delta - phi*phi - v)
 	} else {
-		b  = volK(f, a, tau)
+		b = volK(f, a, tau)
 	}
-	
+
 	fa := f(a)
 	fb := f(b)
-	
+
 	var c, fc, d, fd float64
 	for i := 100; ; i-- {
-		if math.Abs(b - a) <= ε {
+		if math.Abs(b-a) <= ε {
 			return math.Exp(a / 2)
 		} else {
 			c = (a + b) * 0.5
 			fc = f(c)
-			d = c + (c - a) * (sign(fa - fb) * fc) / math.Sqrt(fc * fc - fa*fb)
+			d = c + (c-a)*(sign(fa-fb)*fc)/math.Sqrt(fc*fc-fa*fb)
 			fd = f(d)
-			
+
 			if sign(fd) != sign(fc) {
 				a = c
 				b = d
@@ -138,7 +138,7 @@ func computeVolatility(sigma float64, phi float64, v float64, delta float64, tau
 			}
 		}
 	}
-	
+
 	panic("Exceeded iterations")
 }
 
@@ -148,17 +148,17 @@ func phiStar(sigmap float64, phi float64) float64 {
 
 func newRating(phis float64, mu float64, v float64, sopp []opp) (float64, float64) {
 	phip := 1 / math.Sqrt(
-			(1 / (phis * phis)) + (1 / v))
+		(1/(phis*phis))+(1/v))
 	s := 0.0
 	for _, o := range sopp {
 		s += o.gphij * (o.sj - o.emmp)
 	}
-	mup := mu + (phip*phip) * s
+	mup := mu + (phip*phip)*s
 	return mup, phip
 }
 
 func unscale(mup float64, phip float64) (float64, float64) {
-	rp := scaling * mup + 1500.0
+	rp := scaling*mup + 1500.0
 	rdp := scaling * phip
 	return rp, rdp
 }
@@ -169,11 +169,11 @@ func (p Player) Rate(os []Opponent) Player {
 	sopps := scaleOpponents(mu, os)
 	v := updateRating(sopps)
 	delta := computeDelta(v, sopps)
-	
+
 	sigmap := computeVolatility(p.Sigma, phi, v, delta, tau)
 	phistar := phiStar(sigmap, phi)
 	mup, phip := newRating(phistar, mu, v, sopps)
 	r1, rd1 := unscale(mup, phip)
-	
-	return Player{ r1, rd1, sigmap }
+
+	return Player{r1, rd1, sigmap}
 }
