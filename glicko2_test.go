@@ -145,13 +145,17 @@ func TestUnscale(t *testing.T) {
 }
 
 func BenchmarkRate(b *testing.B) {
-	p := Player{1500, 200, 0.06}
 	os := []Opponent{
 		Opponent{1400, 30, 1},
 		Opponent{1550, 100, 0},
 		Opponent{1700, 300, 0}}
+	p := Player{"test", "test", 1500, 200, 0.06, [][]Opponent{os}}
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		p.Rate(os)
+		p.Rank()
+		p.R = 1500
+		p.Rd = 200
+		p.Sigma = 0.06
 	}
 }
