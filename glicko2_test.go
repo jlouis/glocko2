@@ -11,7 +11,7 @@ var (
 
 func TestScale(t *testing.T) {
 	const r, mu, rd, phi = 1500.0, 0.0, 200.0, 1.1512924985234674
-	x, y := scale(r, rd)
+	x, y := Scale(r, rd)
 
 	if x != mu {
 		t.Errorf("scale(%v, ⋯) = %v, ⋯, want %v", r, x, mu)
@@ -133,7 +133,7 @@ func TestNewRating(t *testing.T) {
 func TestUnscale(t *testing.T) {
 	const mup, phip, r1, rd1 = -0.20694096667525494, 0.8721991881307343, 1464.0506705393013, 151.51652412385727
 
-	r, rd := unscale(mup, phip)
+	r, rd := Unscale(mup, phip)
 
 	if math.Abs(r-r1) > epsilon {
 		t.Errorf("unscale for r")

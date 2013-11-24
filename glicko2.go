@@ -19,7 +19,7 @@ type Player struct {
 type Opponent struct {
 	Rj  float64 // Opponent ranking
 	Rdj float64 // Opponent ranking deviation
-	Sj  float64 // Score— 0.0, 1.0 or 0.5 for Loss, Win, Draw respectively
+	Sj  float64 // Score—0.0, 1.0 or 0.5 for Loss, Win, Draw respectively
 }
 
 type opp struct {
@@ -30,7 +30,7 @@ type opp struct {
 	sj    float64
 }
 
-func scale(r float64, rd float64) (mu float64, phi float64) {
+func Scale(r float64, rd float64) (mu float64, phi float64) {
 	mu = (r - 1500.0) / scaling
 	phi = (rd / scaling)
 	return mu, phi
@@ -47,7 +47,7 @@ func e(mu float64, muj float64, phij float64) float64 {
 func scaleOpponents(mu float64, os []Opponent) (res []opp) {
 	res = make([]opp, len(os))
 	for i, o := range os {
-		muj, phij := scale(o.Rj, o.Rdj)
+		muj, phij := Scale(o.Rj, o.Rdj)
 		res[i] = opp{muj, phij, g(phij), e(mu, muj, phij), o.Sj}
 	}
 
@@ -157,7 +157,7 @@ func newRating(phis float64, mu float64, v float64, sopp []opp) (float64, float6
 	return mup, phip
 }
 
-func unscale(mup float64, phip float64) (float64, float64) {
+func Unscale(mup float64, phip float64) (float64, float64) {
 	rp := scaling*mup + 1500.0
 	rdp := scaling * phip
 	return rp, rdp
@@ -165,7 +165,7 @@ func unscale(mup float64, phip float64) (float64, float64) {
 
 func (p Player) Rate(os []Opponent) Player {
 	const tau = 0.5
-	mu, phi := scale(p.R, p.Rd)
+	mu, phi := Scale(p.R, p.Rd)
 	sopps := scaleOpponents(mu, os)
 	v := updateRating(sopps)
 	delta := computeDelta(v, sopps)
@@ -173,7 +173,7 @@ func (p Player) Rate(os []Opponent) Player {
 	sigmap := computeVolatility(p.Sigma, phi, v, delta, tau)
 	phistar := phiStar(sigmap, phi)
 	mup, phip := newRating(phistar, mu, v, sopps)
-	r1, rd1 := unscale(mup, phip)
+	r1, rd1 := Unscale(mup, phip)
 
 	return Player{r1, rd1, sigmap}
 }
