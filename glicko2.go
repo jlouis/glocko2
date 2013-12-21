@@ -7,7 +7,6 @@ import (
 const (
 	scaling = 173.7178 // Scaling factor for Glicko2
 	ε       = 0.000001
-	tau     = 0.5
 )
 
 type Player struct {
@@ -16,13 +15,12 @@ type Player struct {
 	R         float64 // Player ranking
 	Rd        float64 // Ranking deviation
 	Sigma     float64 // Volatility
-	Opponents [][]Opponent
+	Active	bool // Is the player currently active?
 }
 
 type Opponent struct {
-	Rj  float64 // Opponent ranking
-	Rdj float64 // Opponent ranking deviation
-	Sj  float64 // Score—0.0, 1.0 or 0.5 for Loss, Win, Draw respectively
+	Idx	int	// Player index
+	Sj float64 // Match score
 }
 
 type opp struct {
@@ -47,10 +45,10 @@ func e(mu float64, muj float64, phij float64) float64 {
 	return (1 / (1 + math.Exp(-g(phij)*(mu-muj))))
 }
 
-func scaleOpponents(mu float64, os []Opponent) (res []opp) {
+func scaleOpponents(mu float64, os []Opponent, players []Player) (res []opp) {
 	res = make([]opp, len(os))
 	for i, o := range os {
-		muj, phij := Scale(o.Rj, o.Rdj)
+		muj, phij := Scale(players[o.Idx].R, players[o.Idx].Rd)
 		res[i] = opp{muj, phij, g(phij), e(mu, muj, phij), o.Sj}
 	}
 
@@ -78,8 +76,13 @@ func computeDelta(v float64, sopp []opp) float64 {
 func volK(f func(float64) float64, a float64, tau float64) float64 {
 	k := 0.0
 	c := a - k*math.Sqrt(tau*tau)
+	i := 0
 	for ; f(c) < 0.0; k += 1.0 {
 		c = a - k*math.Sqrt(tau*tau)
+		i++
+		if i > 10000 {
+			panic("volK exceeded")
+		}
 	}
 
 	return c
@@ -108,7 +111,7 @@ func computeVolatility(sigma float64, phi float64, v float64, delta float64, tau
 	}
 
 	var b float64
-	if delta*delta > phi*phi {
+	if delta*delta > phi*phi + v {
 		b = math.Log(delta*delta - phi*phi - v)
 	} else {
 		b = volK(f, a, tau)
@@ -118,7 +121,7 @@ func computeVolatility(sigma float64, phi float64, v float64, delta float64, tau
 	fb := f(b)
 
 	var c, fc, d, fd float64
-	for i := 100; ; i-- {
+	for i := 100; i > 0 ; i-- {
 		if math.Abs(b-a) <= ε {
 			return math.Exp(a / 2)
 		} else {
@@ -145,7 +148,7 @@ func computeVolatility(sigma float64, phi float64, v float64, delta float64, tau
 	panic("Exceeded iterations")
 }
 
-func phiStar(sigmap float64, phi float64) float64 {
+func PhiStar(sigmap float64, phi float64) float64 {
 	return math.Sqrt(phi*phi + sigmap*sigmap)
 }
 
@@ -166,21 +169,17 @@ func Unscale(mup float64, phip float64) (float64, float64) {
 	return rp, rdp
 }
 
-func (p *Player) Rank() {
-	const tau = 0.5
-	for _, y := range p.Opponents {
-		mu, phi := Scale(p.R, p.Rd)
-		sopps := scaleOpponents(mu, y)
-		v := updateRating(sopps)
-		delta := computeDelta(v, sopps)
+func (p *Player) Rank(opponents []Opponent, players []Player, tau float64) (float64, float64, float64) {
+	
+	mu, phi := Scale(p.R, p.Rd)
+	sopps := scaleOpponents(mu, opponents, players)
+	v := updateRating(sopps)
+	delta := computeDelta(v, sopps)
 
-		sigmap := computeVolatility(p.Sigma, phi, v, delta, tau)
-		phistar := phiStar(sigmap, phi)
-		mup, phip := newRating(phistar, mu, v, sopps)
-		r1, rd1 := Unscale(mup, phip)
+	sigmap := computeVolatility(p.Sigma, phi, v, delta, tau)
+	phistar := PhiStar(sigmap, phi)
+	mup, phip := newRating(phistar, mu, v, sopps)
+	r1, rd1 := Unscale(mup, phip)
 
-		p.R = r1
-		p.Rd = rd1
-		p.Sigma = sigmap
-	}
+	return r1, rd1, sigmap
 }
